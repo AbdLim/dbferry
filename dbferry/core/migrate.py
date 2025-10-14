@@ -24,12 +24,23 @@ class MigrationManager:
             enums = self.source.list_enum_types()
             if enums:
                 p.info("Recreating ENUM types on target...")
+
                 for enum in enums:
                     try:
                         self.target.create_enum(enum)
+                        self.target.conn.commit()
                         p.success(f"Created ENUM: {enum.name}")
+
                     except Exception as e:
-                        p.warn(f"Skipping {enum.name} (maybe exists): {e}")
+                        # Rollback this enum’s transaction
+                        try:
+                            self.target.conn.rollback()
+                        except Exception as rollback_err:
+                            p.error(
+                                f"Rollback failed for ENUM {enum.name}: {rollback_err}"
+                            )
+                        # Continue gracefully
+                        p.warn(f"Skipping {enum.name} (maybe exists or invalid): {e}")
 
             # Determine which tables to migrate
             if self.config.options.tables == ["*"]:
@@ -63,22 +74,47 @@ class MigrationManager:
             self.target.close()
 
     def migrate_table(self, table: str):
-        p.info(f"Migrating table [bold]{table}[/bold]..")
+        """
+        Migrates a single table from the source to the target.
+        Handles per-table transaction safety (commit on success, rollback on failure).
+        """
+        p.info(f"Migrating table [bold]{table}[/bold]...")
 
         try:
+            # Begin transaction (some drivers auto-start; this makes it explicit)
+            cur = self.target.conn.cursor()
+
+            # 1️⃣ Get schema from source
             schema = self.source.get_table_schema(table)
             self.target.create_table(schema)
             p.success(f"Created table {table} on target (if not exists).")
 
+            # 2️⃣ Fetch data
             rows = self.source.fetch_rows(table_name=table, limit=1000)
             if not rows:
                 p.warn(f"No rows found in {table}. Skipping.")
+                self.target.conn.commit()
+                cur.close()
                 return
-            p.info(f"Fetched {len(rows)} rows in table {table}.")
+
+            p.info(f"Fetched {len(rows)} rows from table {table}.")
+
+            # 3️⃣ Insert into target
             self.target.insert_rows(table_name=table, rows=rows)
             p.success(f"Migrated {len(rows)} rows for table {table}.")
+
+            # ✅ Commit transaction for this table
+            self.target.conn.commit()
+            cur.close()
+
         except Exception as e:
-            p.error(f"Failed to migrate to table {table} :{e}")
+            # 🔁 Rollback failed transaction
+            try:
+                self.target.conn.rollback()
+            except Exception as rollback_err:
+                p.error(f"Rollback failed for table {table}: {rollback_err}")
+
+            p.error(f"Failed to migrate table {table}: {e}")
 
 
 import networkx as nx
