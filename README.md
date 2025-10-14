@@ -45,15 +45,26 @@ Then edit your generated `migration.yml`:
 ```yaml
 source:
     type: postgres
-    url: postgresql://user:password@localhost/source_db
+    host: localhost
+    port: 5432
+    database: my-awesomedb
+    user: postgres
+    password: postgres
+    sslmode: require
 
 target:
-    type: mysql
-    url: mysql://user:password@localhost/target_db
+    type: postgres
+    host: localhost
+    port: 5432
+    database: targetdb
+    user: postgres
+    password: postgres
+    sslmode: require
 
 options:
-    migrate_schema: true
-    migrate_data: true
+    tables:
+        - "*"
+    verify_after_migration: true
 ```
 
 Run the migration:
