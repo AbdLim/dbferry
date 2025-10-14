@@ -1,11 +1,8 @@
 import click
-from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
 from pathlib import Path
 import yaml
 
-console = Console()
+from dbferry.core.console import Printer as p
 
 
 @click.group()
@@ -22,7 +19,7 @@ def init():
     config_path = Path("migration.yml")
 
     if config_path.exists():
-        console.print("[yellow]migration.yml already exists.[/yellow]")
+        p.warn("migration.yml already exists.")
         return
 
     sample_config = {
@@ -51,12 +48,11 @@ def init():
     with open(config_path, "w") as f:
         yaml.dump(sample_config, f, sort_keys=False)
 
-    console.print(
-        Panel.fit(
-            "[green]✅ Created sample migration.yml[/green]\nEdit it with your database credentials before running `dbferry check`.",
-            title="Initialization Complete",
-            border_style="green",
-        )
+    p.panel(
+        message="[green]✅ Created sample migration.yml[/green]\n"
+        "Edit it with your database credentials before running `dbferry check`.",
+        title="Initialization Complete",
+        style="green",
     )
 
 
@@ -70,26 +66,22 @@ def check(config):
     """
     path = Path(config)
     if not path.exists():
-        console.print(f"[red]❌ Config file not found: {path}[/red]")
+        p.error(f"Config file not found: {path}")
         return
 
-    console.print("[cyan]Reading configuration...[/cyan]")
+    p.info("Reading configuration...")
     try:
         cfg = yaml.safe_load(path.read_text())
         source, target = cfg.get("source"), cfg.get("target")
-        console.print(
-            Panel(
-                f"[bold]Source:[/bold] {source['type']} → [bold]Target:[/bold] {target['type']}",
-                title="Connections",
-                border_style="blue",
-            )
+        p.panel(
+            message=f"[bold]Source:[/bold] {source['type']} → [bold]Target:[/bold] {target['type']}",
+            title="Connections",
+            style="blue",
         )
-        console.print("[green]✅ Configuration loaded successfully.[/green]")
-        console.print(
-            "[yellow]⚠️ Actual DB connectivity tests will be added later.[/yellow]"
-        )
+        p.success("Configuration loaded successfully.")
+        p.warn("Actual DB connectivity tests will be added later.")
     except Exception as e:
-        console.print(f"[red]Error reading config: {e}[/red]")
+        p.error(f"Error reading config: {e}")
 
 
 @app.command()
@@ -100,9 +92,9 @@ def migrate(config):
     """
     Run a mock migration based on the provided configuration.
     """
-    console.print(f"[cyan]Starting migration using {config}...[/cyan]")
+    p.info(f"Starting migration using {config}...")
     # TODO: Replace this with real migration logic in dbferry/core/migrate.py
-    console.print("[green]✅ Migration completed successfully (simulated).[/green]")
+    p.success("Migration completed successfully (simulated).")
 
 
 @app.command()
@@ -113,16 +105,14 @@ def verify(config):
     """
     Verify that the target database matches the source after migration.
     """
-    console.print(f"[cyan]Running post-migration verification using {config}...[/cyan]")
+    p.info(f"Running post-migration verification using {config}...")
     # TODO: Replace this with real data validation logic
-    table = Table(title="Verification Summary")
-    table.add_column("Table")
-    table.add_column("Rows Matched", justify="center")
-    table.add_column("Status", justify="center")
-    table.add_row("users", "100%", "[green]OK[/green]")
-    table.add_row("orders", "99.8%", "[yellow]Minor diff[/yellow]")
-    console.print(table)
-    console.print("[green]Verification completed (mock).[/green]")
+    rows = [
+        ["users", "100%", "[green]OK[/green]"],
+        ["orders", "99.8%", "[yellow]Minor diff[/yellow]"],
+    ]
+    p.table("Verification Summary", ["Table", "Rows Matched", "Status"], rows)
+    p.success("Verification completed (mock).")
 
 
 if __name__ == "__main__":
