@@ -21,9 +21,17 @@
 ## 🚀 Quick Start
 
 ```bash
+# Install using pip (simplest method)
+pip install dbferry
+
+# Install using uv tool
 uv tool install dbferry
-# or
+
+# Install using pipx (recommended for CLI tools)
 pipx install dbferry
+
+# Install directly from GitHub (latest development version)
+pip install git+https://github.com/AbdLim/dbferry.git
 ```
 
 Initialize your migration:

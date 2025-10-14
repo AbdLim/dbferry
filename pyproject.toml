@@ -1,0 +1,30 @@
+[project]
+name = "dbferry"
+version = "0.1.1"
+description = "A secure, local-first database migration tool"
+authors = [{ name = "Abdulalim Ladan", email = "aaladan453@gmail.com" }]
+license = "Apache-2.0"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "click>=8.1.7",
+    "rich>=13.7.0",
+    "sqlalchemy>=2.0.25",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.30.1",
+    "python-dotenv>=1.0.1",
+    "psycopg[binary]>=3.1.19",
+    "pymysql>=1.1.0",
+    "pyyaml>=6.0.3",
+    "psycopg2>=2.9.11",
+    "networkx>=3.5",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff", "black", "mypy"]
+
+[tool.uv]
+package = true
+
+[project.scripts]
+dbferry = "dbferry.cli:app"
