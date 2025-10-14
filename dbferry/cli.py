@@ -31,6 +31,7 @@ def init():
             "database": "source_db",
             "user": "username",
             "password": "password",
+            "sslmode": "require",
         },
         "target": {
             "type": "mysql",
@@ -39,6 +40,7 @@ def init():
             "database": "target_db",
             "user": "username",
             "password": "password",
+            "sslmode": "require",
         },
         "options": {
             "tables": ["*"],
