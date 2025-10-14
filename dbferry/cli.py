@@ -92,5 +92,18 @@ def check(config):
         console.print(f"[red]Error reading config: {e}[/red]")
 
 
+@app.command()
+@click.option(
+    "--config", default="migration.yml", help="Path to the migration config file"
+)
+def migrate(config):
+    """
+    Run a mock migration based on the provided configuration.
+    """
+    console.print(f"[cyan]Starting migration using {config}...[/cyan]")
+    # TODO: Replace this with real migration logic in dbferry/core/migrate.py
+    console.print("[green]✅ Migration completed successfully (simulated).[/green]")
+
+
 if __name__ == "__main__":
     app()
