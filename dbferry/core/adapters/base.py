@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, List, Dict
 from dbferry.core.config import DBConfig
+from dbferry.core.schema import TableSchema
 
 
 class BaseAdapter(ABC):
@@ -28,6 +29,16 @@ class BaseAdapter(ABC):
     @abstractmethod
     def list_tables(self) -> List[str]:
         """Return a list of table names in the current database."""
+        pass
+
+    @abstractmethod
+    def get_table_schema(self, table_name: str) -> TableSchema:
+        """Return the schema definition for the given table."""
+        pass
+
+    @abstractmethod
+    def create_table(self, schema: TableSchema) -> None:
+        """Create a table based on the provided schema."""
         pass
 
     @abstractmethod

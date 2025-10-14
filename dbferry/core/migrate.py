@@ -50,6 +50,10 @@ class MigrationManager:
         p.info(f"Migrating table [bold]{table}[/bold]..")
 
         try:
+            schema = self.source.get_table_schema(table)
+            self.target.create_table(schema)
+            p.success(f"Created table {table} on target (if not exists).")
+
             rows = self.source.fetch_rows(table_name=table, limit=1000)
             if not rows:
                 p.warn(f"No rows found in {table}. Skipping.")

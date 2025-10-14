@@ -2,6 +2,7 @@ from typing import Any, Dict, List
 import psycopg2
 from psycopg2 import OperationalError
 from dbferry.core.adapters.base import BaseAdapter
+from dbferry.core.schema import ColumnSchema, TableSchema
 
 
 class PostgresAdapter(BaseAdapter):
@@ -36,6 +37,44 @@ class PostgresAdapter(BaseAdapter):
                 self.conn.close()
             except Exception:
                 pass
+
+    def get_table_schema(self, table_name: str) -> TableSchema:
+        cur = self.conn.cursor()
+        cur.execute(
+            """
+            SELECT column_name, data_type, is_nullable, column_default
+            FROM information_schema.columns
+            WHERE table_schema = 'public' AND table_name = %s;
+        """,
+            (table_name,),
+        )
+        cols = []
+        for name, dtype, nullable, default in cur.fetchall():
+            cols.append(
+                ColumnSchema(
+                    name=name,
+                    type=dtype.upper(),
+                    nullable=(nullable == "YES"),
+                    default=default,
+                )
+            )
+        cur.close()
+        return TableSchema(name=table_name, columns=cols)
+
+    def create_table(self, schema: TableSchema):
+        cols_sql = []
+        for col in schema.columns:
+            col_sql = f'"{col.name}" {col.type}'
+            if not col.nullable:
+                col_sql += " NOT NULL"
+            if col.default:
+                col_sql += f" DEFAULT {col.default}"
+            cols_sql.append(col_sql)
+        sql = f'CREATE TABLE IF NOT EXISTS "{schema.name}" ({", ".join(cols_sql)});'
+        cur = self.conn.cursor()
+        cur.execute(sql)
+        self.conn.commit()
+        cur.close()
 
     def list_tables(self) -> List[str]:
         query = """
