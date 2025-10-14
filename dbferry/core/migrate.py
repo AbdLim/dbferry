@@ -1,6 +1,7 @@
 from dbferry.core.console import Printer as p
 from dbferry.core.config import MigrationConfig
 from dbferry.core.connection import ConnectionManager
+from dbferry.core.schema import TableSchema
 
 
 class MigrationManager:
@@ -32,7 +33,12 @@ class MigrationManager:
                 p.warn("No tables found or specified. Exiting migration.")
                 return
 
-            for table in tables:
+            tables = [
+                self.source.get_table_schema(name) for name in self.source.list_tables()
+            ]
+            order = resolve_table_order(tables=tables)
+
+            for table in order:
                 self.migrate_table(table)
 
             p.panel(
@@ -63,3 +69,15 @@ class MigrationManager:
             p.success(f"Migrated {len(rows)} rows for table {table}.")
         except Exception as e:
             p.error(f"Failed to migrate to table {table} :{e}")
+
+
+import networkx as nx
+
+
+def resolve_table_order(tables: list[TableSchema]):
+    g = nx.DiGraph()
+    for t in tables:
+        g.add_node(t.name)
+        for fk in t.foreign_keys or []:
+            g.add_edge(fk.ref_table, t.name)
+    return list(nx.topological_sort(g))

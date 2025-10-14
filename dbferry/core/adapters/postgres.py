@@ -2,7 +2,12 @@ from typing import Any, Dict, List
 import psycopg2
 from psycopg2 import OperationalError
 from dbferry.core.adapters.base import BaseAdapter
-from dbferry.core.schema import ColumnSchema, TableSchema
+from dbferry.core.schema import (
+    ColumnSchema,
+    ForeignKeySchema,
+    TableSchema,
+    UniqueKeySchema,
+)
 
 
 class PostgresAdapter(BaseAdapter):
@@ -40,6 +45,8 @@ class PostgresAdapter(BaseAdapter):
 
     def get_table_schema(self, table_name: str) -> TableSchema:
         cur = self.conn.cursor()
+
+        # Columns
         cur.execute(
             """
             SELECT column_name, data_type, is_nullable, column_default
@@ -48,18 +55,73 @@ class PostgresAdapter(BaseAdapter):
         """,
             (table_name,),
         )
-        cols = []
-        for name, dtype, nullable, default in cur.fetchall():
-            cols.append(
-                ColumnSchema(
-                    name=name,
-                    type=dtype.upper(),
-                    nullable=(nullable == "YES"),
-                    default=default,
-                )
-            )
+        columns = [
+            ColumnSchema(name=n, type=t, nullable=(nn == "YES"), default=d)
+            for n, t, nn, d in cur.fetchall()
+        ]
+
+        # Primary key
+        cur.execute(
+            """
+            SELECT a.attname
+            FROM pg_index i
+            JOIN pg_attribute a ON a.attrelid = i.indrelid
+                AND a.attnum = ANY(i.indkey)
+            WHERE i.indrelid = %s::regclass
+            AND i.indisprimary;
+        """,
+            (table_name,),
+        )
+        primary_key = [r[0] for r in cur.fetchall()]
+
+        # Unique keys
+        cur.execute(
+            """
+            SELECT
+                i.relname AS index_name,
+                ARRAY_AGG(a.attname ORDER BY a.attnum) AS column_names
+            FROM pg_class t
+            JOIN pg_index ix ON t.oid = ix.indrelid
+            JOIN pg_class i ON i.oid = ix.indexrelid
+            JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = ANY(ix.indkey)
+            WHERE t.relname = %s AND ix.indisunique AND NOT ix.indisprimary
+            GROUP BY i.relname;
+        """,
+            (table_name,),
+        )
+        unique_keys = [
+            UniqueKeySchema(columns=list(cols)) for _, cols in cur.fetchall()
+        ]
+
+        # Foreign keys
+        cur.execute(
+            """
+            SELECT
+                kcu.column_name,
+                ccu.table_name AS ref_table,
+                ccu.column_name AS ref_column
+            FROM information_schema.table_constraints AS tc
+            JOIN information_schema.key_column_usage AS kcu
+            ON tc.constraint_name = kcu.constraint_name
+            JOIN information_schema.constraint_column_usage AS ccu
+            ON ccu.constraint_name = tc.constraint_name
+            WHERE constraint_type = 'FOREIGN KEY' AND tc.table_name = %s;
+        """,
+            (table_name,),
+        )
+        foreign_keys = [
+            ForeignKeySchema(column=c, ref_table=rt, ref_column=rc)
+            for c, rt, rc in cur.fetchall()
+        ]
+
         cur.close()
-        return TableSchema(name=table_name, columns=cols)
+        return TableSchema(
+            name=table_name,
+            columns=columns,
+            primary_key=primary_key,
+            unique_keys=unique_keys,
+            foreign_keys=foreign_keys,
+        )
 
     def create_table(self, schema: TableSchema):
         cols_sql = []

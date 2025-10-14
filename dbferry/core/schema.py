@@ -13,4 +13,19 @@ class ColumnSchema:
 @dataclass
 class TableSchema:
     name: str
-    columns: List[ColumnSchema]
+    columns: list[ColumnSchema]
+    primary_key: list[str] | None = None
+    unique_keys: list["UniqueKeySchema"] | None = None
+    foreign_keys: list["ForeignKeySchema"] | None = None
+
+
+@dataclass
+class ForeignKeySchema:
+    column: str
+    ref_table: str
+    ref_column: str
+
+
+@dataclass
+class UniqueKeySchema:
+    columns: list[str]

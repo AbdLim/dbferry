@@ -17,6 +17,7 @@ dependencies = [
     "pymysql>=1.1.0",
     "pyyaml>=6.0.3",
     "psycopg2>=2.9.11",
+    "networkx>=3.5",
 ]
 
 [project.optional-dependencies]
