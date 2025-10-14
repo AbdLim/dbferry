@@ -20,7 +20,17 @@ class MigrationManager:
             self.target.connect()
             p.success("DB Connections success")
 
-            tables = self.config.options.tables
+            # Determine which tables to migrate
+            if self.config.options.tables == ["*"]:
+                tables = self.source.list_tables()
+                p.info(f"Discovered {len(tables)} tables from source database.")
+            else:
+                tables = self.config.options.tables or []
+                p.info(f"Using specified tables from config: {', '.join(tables)}")
+
+            if not tables:
+                p.warn("No tables found or specified. Exiting migration.")
+                return
 
             for table in tables:
                 self.migrate_table(table)

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, List
 from dbferry.core.config import DBConfig
 
 
@@ -9,6 +9,11 @@ class BaseAdapter(ABC):
     def __init__(self, config: DBConfig):
         self.config = config
         self.conn: Any = None
+
+    @abstractmethod
+    def list_tables(self) -> List[str]:
+        """Return a list of table names in the current database."""
+        pass
 
     @abstractmethod
     def connect(self) -> Any:

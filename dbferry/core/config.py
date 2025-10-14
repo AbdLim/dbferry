@@ -19,6 +19,7 @@ class DBConfig:
     database: str
     user: str
     password: str
+    sslmode: str
 
     def normalized(self):
         """default ports depending on DB type."""
@@ -104,4 +105,5 @@ class ConfigLoader:
             database=block["database"],
             user=block["user"],
             password=block["password"],
+            sslmode=block["sslmode"],
         )
