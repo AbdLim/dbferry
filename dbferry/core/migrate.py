@@ -59,9 +59,7 @@ class MigrationManager:
                 p.warn("No tables found or specified. Exiting migration.")
                 return
 
-            tables = [
-                self.source.get_table_schema(name) for name in self.source.list_tables()
-            ]
+            tables = [self.source.get_table_schema(name) for name in tables]
             order = resolve_table_order(tables=tables)
 
             for table in order:
