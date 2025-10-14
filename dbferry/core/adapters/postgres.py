@@ -24,6 +24,7 @@ class PostgresAdapter(BaseAdapter):
                 password=self.config.password,
                 sslmode=self.config.sslmode or "prefer",
             )
+            self.conn.autocommit = True
             return self.conn
         except OperationalError as e:
             raise ConnectionError(f"Postgres connection failed: {e}")
@@ -202,3 +203,12 @@ class PostgresAdapter(BaseAdapter):
         values = ", ".join(f"'{v}'" for v in enum.values)
         cur.execute(f"CREATE TYPE {enum.name} AS ENUM ({values});")
         cur.close()
+
+    def count_rows(self, table_name: str) -> int:
+        """Return row count from the specified table."""
+        with self.conn.cursor() as cur:
+            try:
+                cur.execute(f'SELECT COUNT(*) FROM "{table_name}";')
+                return cur.fetchone()[0]
+            except Exception as e:
+                raise RuntimeError(f"Failed to count rows in {table_name}: {e}")

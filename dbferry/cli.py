@@ -148,15 +148,69 @@ def migrate(config, dry_run):
 def verify(config):
     """
     Verify that the target database matches the source after migration.
+    Compares row counts table-by-table and renders a summary.
     """
-    p.info(f"Running post-migration verification using {config}...")
-    # TODO: Replace this with real data validation logic
-    rows = [
-        ["users", "100%", "[green]OK[/green]"],
-        ["orders", "99.8%", "[yellow]Minor diff[/yellow]"],
-    ]
-    p.table("Verification Summary", ["Table", "Rows Matched", "Status"], rows)
-    p.success("Verification completed (mock).")
+    from dbferry.core.connection import ConnectionManager
+    from dbferry.core.config import ConfigLoader
+
+    path = Path(config)
+    if not path.exists():
+        p.error(f"Config file not found: {path}")
+        return
+
+    p.info(f"Starting verification using {config}...")
+
+    try:
+        cfg = ConfigLoader.load(path)
+        conn_mgr = ConnectionManager()
+
+        source = conn_mgr.get_adapter(cfg.source)
+        target = conn_mgr.get_adapter(cfg.target)
+
+        source.connect()
+        target.connect()
+
+        tables = source.list_tables()
+        if not tables:
+            p.warn("No tables found in source database.")
+            return
+
+        p.info(f"Discovered {len(tables)} tables from source database.")
+
+        rows = []
+        for tbl in tables:
+            try:
+                src_count = source.count_rows(tbl)
+                tgt_count = target.count_rows(tbl)
+
+                if src_count == tgt_count:
+                    status = "[green]✓ Match[/green]"
+                else:
+                    status = f"[yellow]⚠ Mismatch ({abs(src_count - tgt_count)} diff)[/yellow]"
+
+                rows.append([tbl, str(src_count), str(tgt_count), status])
+            except Exception as e:
+                rows.append([tbl, "—", "—", f"[red]Error: {e}[/red]"])
+
+        p.table(
+            title="Verification Summary",
+            columns=["Table", "Source Rows", "Target Rows", "Status"],
+            rows=rows,
+        )
+
+        if all("Match" in r[-1] for r in rows):
+            p.panel(
+                "All tables verified successfully.", title="Verification", style="green"
+            )
+        else:
+            p.panel(
+                "Verification completed with mismatches or errors.",
+                title="Verification",
+                style="yellow",
+            )
+
+    except Exception as e:
+        p.error(f"Verification failed: {e}")
 
 
 if __name__ == "__main__":

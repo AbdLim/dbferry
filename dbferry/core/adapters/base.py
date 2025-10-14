@@ -50,3 +50,8 @@ class BaseAdapter(ABC):
     def insert_rows(self, table_name: str, rows: List[Dict[str, Any]]) -> None:
         """Insert rows into a table."""
         pass
+
+    @abstractmethod
+    def count_rows(self, table_name: str) -> int:
+        """Return the number of rows in a given table."""
+        pass
