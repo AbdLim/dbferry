@@ -120,9 +120,21 @@ def migrate(config):
     """
     Run a mock migration based on the provided configuration.
     """
-    p.info(f"Starting migration using {config}...")
-    # TODO: Replace this with real migration logic in dbferry/core/migrate.py
-    p.success("Migration completed successfully (simulated).")
+    from dbferry.core.config import ConfigLoader
+    from dbferry.core.migrate import MigrationManager
+
+    p.info(f"Loading configuration from {config}...")
+    path = Path(config)
+    if not path.exists():
+        p.error(f"Config file not found: {path}")
+        return
+
+    try:
+        cfg = ConfigLoader.load(path)
+        mgr = MigrationManager(cfg)
+        mgr.run()
+    except Exception as e:
+        p.error(f"Migration failed: {e}")
 
 
 @app.command()
