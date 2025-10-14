@@ -60,5 +60,37 @@ def init():
     )
 
 
+@app.command()
+@click.option(
+    "--config", default="migration.yml", help="Path to the migration config file"
+)
+def check(config):
+    """
+    Verify connectivity to the source and target databases.
+    """
+    path = Path(config)
+    if not path.exists():
+        console.print(f"[red]❌ Config file not found: {path}[/red]")
+        return
+
+    console.print("[cyan]Reading configuration...[/cyan]")
+    try:
+        cfg = yaml.safe_load(path.read_text())
+        source, target = cfg.get("source"), cfg.get("target")
+        console.print(
+            Panel(
+                f"[bold]Source:[/bold] {source['type']} → [bold]Target:[/bold] {target['type']}",
+                title="Connections",
+                border_style="blue",
+            )
+        )
+        console.print("[green]✅ Configuration loaded successfully.[/green]")
+        console.print(
+            "[yellow]⚠️ Actual DB connectivity tests will be added later.[/yellow]"
+        )
+    except Exception as e:
+        console.print(f"[red]Error reading config: {e}[/red]")
+
+
 if __name__ == "__main__":
     app()
