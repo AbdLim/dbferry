@@ -2,6 +2,7 @@ import click
 from pathlib import Path
 import yaml
 
+from dbferry.core.config import ConfigLoader
 from dbferry.core.console import Printer as p
 
 
@@ -71,10 +72,10 @@ def check(config):
 
     p.info("Reading configuration...")
     try:
-        cfg = yaml.safe_load(path.read_text())
-        source, target = cfg.get("source"), cfg.get("target")
+        cfg = ConfigLoader.load(path)
+        source, target = cfg.source, cfg.target
         p.panel(
-            message=f"[bold]Source:[/bold] {source['type']} → [bold]Target:[/bold] {target['type']}",
+            message=f"[bold]Source:[/bold] {source.type} → [bold]Target:[/bold] {target.type}",
             title="Connections",
             style="blue",
         )
