@@ -116,10 +116,14 @@ def check(config):
 @click.option(
     "--config", default="migration.yml", help="Path to the migration config file"
 )
-def migrate(config):
+@click.option("--dry-run", is_flag=True, help="Simulate migration without writing data")
+def migrate(config, dry_run):
     """
     Run a mock migration based on the provided configuration.
     """
+    p.info(
+        f"Starting migration using {config} {'(dry-run mode)' if dry_run else ''}..."
+    )
     from dbferry.core.config import ConfigLoader
     from dbferry.core.migrate import MigrationManager
 
@@ -131,7 +135,7 @@ def migrate(config):
 
     try:
         cfg = ConfigLoader.load(path)
-        mgr = MigrationManager(cfg)
+        mgr = MigrationManager(config=cfg, dry_run=dry_run)
         mgr.run()
     except Exception as e:
         p.error(f"Migration failed: {e}")

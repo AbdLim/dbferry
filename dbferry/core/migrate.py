@@ -6,9 +6,10 @@ from dbferry.core.schema import TableSchema
 
 class MigrationManager:
 
-    def __init__(self, config: MigrationConfig):
+    def __init__(self, config: MigrationConfig, dry_run: bool):
         self.config = config
         self.conn_mgr = ConnectionManager()
+        self.dry_run = dry_run
 
         self.source = self.conn_mgr.get_adapter(self.config.source)
         self.target = self.conn_mgr.get_adapter(self.config.target)
@@ -24,23 +25,27 @@ class MigrationManager:
             enums = self.source.list_enum_types()
             if enums:
                 p.info("Recreating ENUM types on target...")
-
-                for enum in enums:
-                    try:
-                        self.target.create_enum(enum)
-                        self.target.conn.commit()
-                        p.success(f"Created ENUM: {enum.name}")
-
-                    except Exception as e:
-                        # Rollback this enum’s transaction
+                if self.dry_run:
+                    p.info("Dry-run: skipping actual data writes.")
+                else:
+                    for enum in enums:
                         try:
-                            self.target.conn.rollback()
-                        except Exception as rollback_err:
-                            p.error(
-                                f"Rollback failed for ENUM {enum.name}: {rollback_err}"
+                            self.target.create_enum(enum)
+                            self.target.conn.commit()
+                            p.success(f"Created ENUM: {enum.name}")
+
+                        except Exception as e:
+                            # Rollback this enum’s transaction
+                            try:
+                                self.target.conn.rollback()
+                            except Exception as rollback_err:
+                                p.error(
+                                    f"Rollback failed for ENUM {enum.name}: {rollback_err}"
+                                )
+                            # Continue gracefully
+                            p.warn(
+                                f"Skipping {enum.name} (maybe exists or invalid): {e}"
                             )
-                        # Continue gracefully
-                        p.warn(f"Skipping {enum.name} (maybe exists or invalid): {e}")
 
             # Determine which tables to migrate
             if self.config.options.tables == ["*"]:
@@ -79,6 +84,10 @@ class MigrationManager:
         Handles per-table transaction safety (commit on success, rollback on failure).
         """
         p.info(f"Migrating table [bold]{table}[/bold]...")
+
+        if self.dry_run:
+            p.info("Dry-run: skipping actual data writes.")
+            return
 
         try:
             # Begin transaction (some drivers auto-start; this makes it explicit)
