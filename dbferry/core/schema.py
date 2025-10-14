@@ -29,3 +29,9 @@ class ForeignKeySchema:
 @dataclass
 class UniqueKeySchema:
     columns: list[str]
+
+
+@dataclass
+class EnumType:
+    name: str
+    values: list[str]

@@ -4,6 +4,7 @@ from psycopg2 import OperationalError
 from dbferry.core.adapters.base import BaseAdapter
 from dbferry.core.schema import (
     ColumnSchema,
+    EnumType,
     ForeignKeySchema,
     TableSchema,
     UniqueKeySchema,
@@ -49,16 +50,21 @@ class PostgresAdapter(BaseAdapter):
         # Columns
         cur.execute(
             """
-            SELECT column_name, data_type, is_nullable, column_default
+            SELECT column_name, data_type, udt_name, is_nullable, column_default
             FROM information_schema.columns
             WHERE table_schema = 'public' AND table_name = %s;
-        """,
+            """,
             (table_name,),
         )
-        columns = [
-            ColumnSchema(name=n, type=t, nullable=(nn == "YES"), default=d)
-            for n, t, nn, d in cur.fetchall()
-        ]
+
+        columns = []
+        for n, t, udt, nn, d in cur.fetchall():
+            # Handle enums or custom types
+            if t == "USER-DEFINED":
+                t = udt
+            columns.append(
+                ColumnSchema(name=n, type=t, nullable=(nn == "YES"), default=d)
+            )
 
         # Primary key
         cur.execute(
@@ -69,7 +75,7 @@ class PostgresAdapter(BaseAdapter):
                 AND a.attnum = ANY(i.indkey)
             WHERE i.indrelid = %s::regclass
             AND i.indisprimary;
-        """,
+            """,
             (table_name,),
         )
         primary_key = [r[0] for r in cur.fetchall()]
@@ -86,7 +92,7 @@ class PostgresAdapter(BaseAdapter):
             JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = ANY(ix.indkey)
             WHERE t.relname = %s AND ix.indisunique AND NOT ix.indisprimary
             GROUP BY i.relname;
-        """,
+            """,
             (table_name,),
         )
         unique_keys = [
@@ -106,7 +112,7 @@ class PostgresAdapter(BaseAdapter):
             JOIN information_schema.constraint_column_usage AS ccu
             ON ccu.constraint_name = tc.constraint_name
             WHERE constraint_type = 'FOREIGN KEY' AND tc.table_name = %s;
-        """,
+            """,
             (table_name,),
         )
         foreign_keys = [
@@ -171,4 +177,28 @@ class PostgresAdapter(BaseAdapter):
         )
         cur.executemany(sql, values)
         self.conn.commit()
+        cur.close()
+
+    def list_enum_types(self) -> list[EnumType]:
+        cur = self.conn.cursor()
+        cur.execute(
+            """
+            SELECT t.typname AS enum_type, e.enumlabel AS enum_label
+            FROM pg_type t
+            JOIN pg_enum e ON t.oid = e.enumtypid
+            JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
+            WHERE n.nspname = 'public'
+            ORDER BY t.typname, e.enumlabel;
+        """
+        )
+        results = {}
+        for enum_type, label in cur.fetchall():
+            results.setdefault(enum_type, []).append(label)
+        cur.close()
+        return [EnumType(name=k, values=v) for k, v in results.items()]
+
+    def create_enum(self, enum: EnumType):
+        cur = self.conn.cursor()
+        values = ", ".join(f"'{v}'" for v in enum.values)
+        cur.execute(f"CREATE TYPE {enum.name} AS ENUM ({values});")
         cur.close()

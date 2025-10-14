@@ -21,6 +21,16 @@ class MigrationManager:
             self.target.connect()
             p.success("DB Connections success")
 
+            enums = self.source.list_enum_types()
+            if enums:
+                p.info("Recreating ENUM types on target...")
+                for enum in enums:
+                    try:
+                        self.target.create_enum(enum)
+                        p.success(f"Created ENUM: {enum.name}")
+                    except Exception as e:
+                        p.warn(f"Skipping {enum.name} (maybe exists): {e}")
+
             # Determine which tables to migrate
             if self.config.options.tables == ["*"]:
                 tables = self.source.list_tables()
