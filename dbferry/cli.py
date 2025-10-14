@@ -80,7 +80,34 @@ def check(config):
             style="blue",
         )
         p.success("Configuration loaded successfully.")
-        p.warn("Actual DB connectivity tests will be added later.")
+
+        #
+        from dbferry.core.connection import ConnectionManager
+
+        conn_mgr = ConnectionManager()
+        results = {}
+
+        for name, db_cfg in [(("source"), source), (("target"), target)]:
+            try:
+                p.info(f"Connecting to {name} database ({db_cfg.type})...")
+                adapter = conn_mgr.get_adapter(db_cfg)
+                adapter.connect()
+                adapter.test_connection()
+                results[name] = True
+                p.success(f"{name.capitalize()} connection successful")
+            except Exception as e:
+                results[name] = False
+                p.error(f"❌ {name.capitalize()} connection failed: {e}")
+
+        # Summary
+        if all(results.values()):
+            p.panel(
+                title="Success",
+                style="green",
+                message="All connections verified succesfully!",
+            )
+        else:
+            p.panel("One or more connections failed.", title="Error", style="red")
     except Exception as e:
         p.error(f"Error reading config: {e}")
 
