@@ -78,8 +78,8 @@ dbferry verify --config migration.yml
 
 ## 🧩 Roadmap
 
--   [x] PostgreSQL → MySQL/SQLite migrations
--   [x] Checkpoint + resume system
+-   [ ] PostgreSQL → MySQL/SQLite migrations
+-   [ ] Checkpoint + resume system
 -   [ ] Incremental sync support
 -   [ ] CLI + Web UI parity
 -   [ ] Plugin API for non-SQL engines (Mongo, ClickHouse, etc.)
@@ -101,13 +101,13 @@ Everything happens locally — inspect the source and verify it yourself.
 ## 🤝 Contributing
 
 We welcome community contributions!  
-Open an issue or PR at [github.com/YOUR_USERNAME/dbferry](https://github.com/YOUR_USERNAME/dbferry)
+Open an issue or PR at [github.com/AbdLim/dbferry](https://github.com/AbdLim/dbferry)
 
 ---
 
 ## 📜 License
 
-Licensed under the **MIT License** — see [LICENSE](LICENSE) for details.
+Licensed under the **Apache License** — see [LICENSE](LICENSE) for details.
 
 ---
 
