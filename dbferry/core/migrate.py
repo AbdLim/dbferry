@@ -48,5 +48,14 @@ class MigrationManager:
 
     def migrate_table(self, table: str):
         p.info(f"Migrating table [bold]{table}[/bold]..")
-        # mock
-        p.success(f"Table {table} migrated (simulated).")
+
+        try:
+            rows = self.source.fetch_rows(table_name=table, limit=1000)
+            if not rows:
+                p.warn(f"No rows found in {table}. Skipping.")
+                return
+            p.info(f"Fetched {len(rows)} rows in table {table}.")
+            self.target.insert_rows(table_name=table, rows=rows)
+            p.success(f"Migrated {len(rows)} rows for table {table}.")
+        except Exception as e:
+            p.error(f"Failed to migrate to table {table} :{e}")

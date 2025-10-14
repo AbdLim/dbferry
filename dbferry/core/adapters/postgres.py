@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, Dict, List
 import psycopg2
 from psycopg2 import OperationalError
 from dbferry.core.adapters.base import BaseAdapter
@@ -6,19 +6,6 @@ from dbferry.core.adapters.base import BaseAdapter
 
 class PostgresAdapter(BaseAdapter):
     """Adapter for Postgres Database"""
-
-    def list_tables(self) -> List[str]:
-        query = """
-        SELECT table_name
-        FROM information_schema.tables
-        WHERE table_schema = 'public'
-        AND table_type = 'BASE TABLE';
-        """
-        cur = self.conn.cursor()
-        cur.execute(query)
-        tables = [r[0] for r in cur.fetchall()]
-        cur.close()
-        return tables
 
     def connect(self):
         try:
@@ -49,3 +36,38 @@ class PostgresAdapter(BaseAdapter):
                 self.conn.close()
             except Exception:
                 pass
+
+    def list_tables(self) -> List[str]:
+        query = """
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+        AND table_type = 'BASE TABLE';
+        """
+        cur = self.conn.cursor()
+        cur.execute(query)
+        tables = [r[0] for r in cur.fetchall()]
+        cur.close()
+        return tables
+
+    def fetch_rows(self, table_name: str, limit: int = 1000) -> List[Dict[str, Any]]:
+        cur = self.conn.cursor()
+        cur.execute(f'SELECT * FROM "{table_name}" LIMIT {limit};')
+        columns = [desc[0] for desc in cur.description]
+        rows = [dict(zip(columns, row)) for row in cur.fetchall()]
+        cur.close()
+        return rows
+
+    def insert_rows(self, table_name: str, rows: list[dict]):
+        if not rows:
+            return
+        cur = self.conn.cursor()
+        columns = rows[0].keys()
+        values = [[row[col] for col in columns] for row in rows]
+        placeholders = ", ".join(["%s"] * len(columns))
+        sql = (
+            f'INSERT INTO "{table_name}" ({", ".join(columns)}) VALUES ({placeholders})'
+        )
+        cur.executemany(sql, values)
+        self.conn.commit()
+        cur.close()
