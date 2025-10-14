@@ -105,5 +105,25 @@ def migrate(config):
     console.print("[green]✅ Migration completed successfully (simulated).[/green]")
 
 
+@app.command()
+@click.option(
+    "--config", default="migration.yml", help="Path to the migration config file"
+)
+def verify(config):
+    """
+    Verify that the target database matches the source after migration.
+    """
+    console.print(f"[cyan]Running post-migration verification using {config}...[/cyan]")
+    # TODO: Replace this with real data validation logic
+    table = Table(title="Verification Summary")
+    table.add_column("Table")
+    table.add_column("Rows Matched", justify="center")
+    table.add_column("Status", justify="center")
+    table.add_row("users", "100%", "[green]OK[/green]")
+    table.add_row("orders", "99.8%", "[yellow]Minor diff[/yellow]")
+    console.print(table)
+    console.print("[green]Verification completed (mock).[/green]")
+
+
 if __name__ == "__main__":
     app()
