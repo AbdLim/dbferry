@@ -132,6 +132,27 @@ class PostgresAdapter(BaseAdapter):
 
     def create_table(self, schema: TableSchema):
         cols_sql = []
+        cur = self.conn.cursor()
+
+        # Create sequences for integer primary keys if needed
+        if schema.primary_key and len(schema.primary_key) == 1:
+            pk_col = next(
+                col for col in schema.columns if col.name == schema.primary_key[0]
+            )
+            if (
+                pk_col.type.lower() == "integer"
+                and pk_col.default
+                and "nextval" in pk_col.default.lower()
+            ):
+                seq_name = f"{schema.name}_{pk_col.name}_seq"
+                try:
+                    cur.execute(f'CREATE SEQUENCE IF NOT EXISTS "{seq_name}";')
+                    # Update the default value to use the new sequence
+                    pk_col.default = f"nextval('{seq_name}'::regclass)"
+                except Exception as e:
+                    self.conn.rollback()
+                    raise Exception(f"Failed to create sequence {seq_name}: {e}")
+
         for col in schema.columns:
             col_sql = f'"{col.name}" {col.type}'
             if not col.nullable:
@@ -139,11 +160,21 @@ class PostgresAdapter(BaseAdapter):
             if col.default:
                 col_sql += f" DEFAULT {col.default}"
             cols_sql.append(col_sql)
+
+        # Add primary key constraint if specified
+        if schema.primary_key:
+            pk_cols = ", ".join(f'"{col}"' for col in schema.primary_key)
+            cols_sql.append(f"PRIMARY KEY ({pk_cols})")
+
         sql = f'CREATE TABLE IF NOT EXISTS "{schema.name}" ({", ".join(cols_sql)});'
-        cur = self.conn.cursor()
-        cur.execute(sql)
-        self.conn.commit()
-        cur.close()
+        try:
+            cur.execute(sql)
+            self.conn.commit()
+        except Exception as e:
+            self.conn.rollback()
+            raise Exception(f"Failed to create table {schema.name}: {e}")
+        finally:
+            cur.close()
 
     def list_tables(self) -> List[str]:
         query = """
