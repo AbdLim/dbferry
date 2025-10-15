@@ -1,6 +1,6 @@
 [project]
 name = "dbferry"
-version = "0.1.1"
+version = "0.1.2"
 description = "A secure, local-first database migration tool"
 authors = [{ name = "Abdulalim Ladan", email = "aaladan453@gmail.com" }]
 license = "Apache-2.0"
@@ -28,3 +28,10 @@ package = true
 
 [project.scripts]
 dbferry = "dbferry.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/AbdLim/dbferry"
+Documentation = "https://github.com/AbdLim/dbferry#readme"
+Repository = "https://github.com/AbdLim/dbferry.git"
+Issues = "https://github.com/AbdLim/dbferry/issues"
+Changelog = "https://github.com/AbdLim/dbferry/releases"
