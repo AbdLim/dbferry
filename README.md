@@ -1,24 +1,22 @@
 # 🐬 dbferry
 
-> A secure, local-first database migration tool — move your data safely between PostgreSQL, MySQL, SQLite, and more.
+> A secure, local-first database migration tool — move your data safely between 2 Postgres Databases.
 
 `dbferry` lets you migrate databases **without exposing credentials or data** to any third-party service. It’s **open-source**, **local-first**, and **transparent** by design.
 
 ---
 
-## ✨ Key Features
+## Key Features
 
--   🔐 **Local-first security** — No telemetry, no external calls, no remote logs.
--   🧱 **Schema + Data migration** — Migrate structure and contents seamlessly.
--   🧩 **Cross-engine support** — PostgreSQL, MySQL, SQLite, and more (extensible via adapters).
--   🧠 **Resumable** — Continue failed migrations without losing progress.
--   📊 **Verifiable** — Check row counts and checksums for consistency.
--   🧰 **Simple YAML config** — Readable, declarative, and versionable.
--   🌐 **Optional Local UI** — Inspect and manage migrations with FastAPI-based web UI.
+-   **Local-first security** — No telemetry, no external calls, no remote logs.
+-   **Schema + Data migration** — Migrate structure and contents seamlessly.
+-   **Cross-engine support** — PostgreSQL, MySQL, SQLite, and more (extensible via adapters).
+-   **Verifiable** — Check row counts and checksums for consistency.
+-   **Simple YAML config** — Readable, declarative, and versionable.
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
 # Install using pip (simplest method)
@@ -81,7 +79,7 @@ dbferry verify --config migration.yml
 
 ---
 
-## 🧭 Philosophy
+## Philosophy
 
 `dbferry` is built on a few simple but strict principles:
 
