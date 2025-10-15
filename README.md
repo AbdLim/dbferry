@@ -95,7 +95,7 @@ dbferry verify --config migration.yml
 
 ---
 
-## 🧩 Roadmap
+## Roadmap
 
 -   [ ] PostgreSQL → MySQL/SQLite migrations
 -   [ ] Checkpoint + resume system
@@ -105,7 +105,7 @@ dbferry verify --config migration.yml
 
 ---
 
-## 🛡️ Security Promise
+## Security Promise
 
 `dbferry` will **never**:
 
@@ -117,14 +117,14 @@ Everything happens locally — inspect the source and verify it yourself.
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 We welcome community contributions!  
 Open an issue or PR at [github.com/AbdLim/dbferry](https://github.com/AbdLim/dbferry)
 
 ---
 
-## 📜 License
+## License
 
 Licensed under the **Apache License** — see [LICENSE](LICENSE) for details.
 
