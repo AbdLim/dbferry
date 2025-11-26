@@ -1,10 +1,11 @@
 # Registry of adapters
 from dbferry.core.console import Printer as p
 from dbferry.core.adapters.postgres import PostgresAdapter
+from dbferry.core.adapters.mysql import MySQLAdapter
 from dbferry.core.config import DBConfig, MigrationConfig
 
 
-ADAPTERS = {"postgres": PostgresAdapter}
+ADAPTERS = {"postgres": PostgresAdapter, "mysql": MySQLAdapter}
 
 
 class ConnectionManager:
